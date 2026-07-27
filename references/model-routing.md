@@ -4,6 +4,8 @@ Use this reference after the master prompt is compiled and before execution. The
 
 ## Detect the Active Runtime
 
+Task-fit recommendation and runtime detection are independent steps. Always classify the task and recommend a capability class plus effort, even when the active runtime is `UNKNOWN`. Runtime detection exists only to decide whether a fit gate is justified.
+
 Record the current model and effort/variant only from, in priority order:
 
 1. model and variant metadata supplied by the host for the active turn;
@@ -11,6 +13,8 @@ Record the current model and effort/variant only from, in priority order:
 3. an explicit statement from the user.
 
 Configuration defaults and last-used settings are not proof of the active runtime because command-line flags, agents, commands, or session selection may override them. Never infer a model from writing style, latency, pricing, environment secrets, or provider credentials. Label unavailable fields `UNKNOWN`.
+
+Do not inspect project manifests, source code, lockfiles, or agent configuration merely to discover the active model. A model named by project code may be an application dependency and says nothing about the host model executing the current turn.
 
 Do not claim to change models or effort. Model changes remain a host/user action unless a real host tool explicitly supports the change. In OpenCode, direct the user to `/models` and the variant selector; model IDs and available variants are provider-specific.
 

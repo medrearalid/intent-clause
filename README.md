@@ -34,6 +34,7 @@ The result is not merely rewritten text. Unless you select prompt-only or plan m
 |---|---|
 | Intent decoding | Converts terms such as "faster," "safer," or "premium" into domain-specific requirements. |
 | Focused context | Uses token budgets, git metadata, existing Graphify indexes, and bounded file reads instead of scanning the repository. |
+| Selective policy loading | Produces an explainable module plan and loads only the domain and control references triggered by the task. |
 | Minimal clarification | Asks only questions whose answers would materially change the implementation. |
 | Proportionate safeguards | Adds security, privacy, rollback, and approval controls only when the task requires them. |
 | Model routing | Recommends the lowest sufficient model capability and effort without claiming to switch the active model. |
@@ -43,15 +44,14 @@ The result is not merely rewritten text. Unless you select prompt-only or plan m
 
 ## Quick Start
 
-Clone the repository and install IntentClause for your host:
+Clone the repository and install IntentClause. If only one supported host is configured, it is detected automatically:
 
 ```bash
 git clone https://github.com/medrearalid/intent-clause.git
 cd intent-clause
 
-python scripts/install.py claude
-# or: python scripts/install.py codex
-# or: python scripts/install.py opencode
+python scripts/install.py
+# If multiple hosts are configured: python scripts/install.py opencode
 ```
 
 Restart the host if it caches commands or skill metadata, then invoke IntentClause:
@@ -96,7 +96,7 @@ Three temporary gates can pause execution without discarding progress:
 The host-aware installer checks destinations before writing and never replaces an existing installation unless `--force` is supplied.
 
 ```bash
-python scripts/install.py <host>
+python scripts/install.py [host]
 ```
 
 | Host | Skill location | Invocation |
@@ -118,6 +118,8 @@ python scripts/install.py claude --dry-run
 ```
 
 The previous `--host <host>` form remains supported for existing scripts.
+
+When the host argument is omitted, the installer uses the single detected Claude Code, Codex, or OpenCode configuration. It asks for an explicit host instead of guessing when none or several are detected.
 
 <details>
 <summary><strong>Manual-invocation behavior by host</strong></summary>
@@ -187,6 +189,8 @@ IntentClause starts small and escalates only after identifying a concrete eviden
 
 `scripts/context_router.py` inventories filenames, sizes, bounded git status and history, Graphify availability, and memory availability without reading candidate file bodies. It returns compact JSON, limits the default candidate set to eight files, ignores unrelated nested fixture or example manifests, rejects paths resolving outside the project, and recommends focused searches or sliced reads.
 
+The router also reads `modules.json` and emits `modules` and `excluded_modules`. Every selected module includes its path, estimated token cost, and selection reason. Security, remote, learning, optimization, and domain guidance therefore remain unloaded until their trigger is present. Runtime rules in `SKILL.md` remain authoritative when a heuristic signal is incomplete.
+
 These budgets constrain the router's evidence plan, not the host's entire conversation. Generated output, retained tool output, prior conversation history, and tokenizer variance remain outside deterministic skill control.
 
 If `graphify-out/graph.json` exists, architecture and relationship requests prefer a bounded Graphify query. IntentClause does not build a new graph unless `--index` is supplied or the user approves the stated indexing cost.
@@ -238,7 +242,7 @@ After showing the master prompt, IntentClause classifies execution from `M0` thr
 
 Risk floors take precedence: `R2` work requires at least `M2`, and `R3` work requires `M3`. Cost reduction cannot silently weaken sensitive work.
 
-The active model and effort are accepted only from host runtime metadata, configuration confirmed for the active turn, or an explicit user statement. Unknown values remain `UNKNOWN`; IntentClause never guesses from writing style or credentials and never claims to switch models without a real host tool. In OpenCode, users change models through `/models` and the provider-supported variant selector.
+The active model and effort are accepted only from host runtime metadata, configuration confirmed for the active turn, or an explicit user statement. Unknown values remain `UNKNOWN`; IntentClause never searches project files for the host model, guesses from writing style or credentials, or claims to switch models without a real host tool. Task classification still always produces a capability-class and effort recommendation; runtime detection is needed only for the fit comparison. In OpenCode, users change models through `/models` and the provider-supported variant selector.
 
 ## Project Structure
 
@@ -249,7 +253,8 @@ intent-clause/
 |-- agents/openai.yaml        # Codex skill policy
 |-- assets/                   # Master prompt template
 |-- evals/                    # Behavioral calibration cases and fixtures
-|-- references/               # Progressive-disclosure guidance
+|-- modules.json              # Declarative selective-loading registry
+|-- references/               # Progressive-disclosure guidance and domain modules
 |-- scripts/
 |   |-- context_router.py     # Bounded project evidence planner
 |   |-- install.py            # Host-aware installer
@@ -260,7 +265,7 @@ intent-clause/
 `-- README.md
 ```
 
-`SKILL.md` contains the mandatory orchestration flow. Detailed references are loaded only when relevant, following the Agent Skills progressive-disclosure model.
+`SKILL.md` is a compact orchestration kernel. Detailed references are selected through `modules.json` and loaded only when relevant, following the Agent Skills progressive-disclosure model.
 
 ## Validation
 

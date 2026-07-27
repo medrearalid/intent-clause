@@ -14,6 +14,23 @@ SKIP_NAMES = {".git", ".intent-clause", "__pycache__"}
 HOSTS = ("claude", "codex", "opencode")
 
 
+def detect_host() -> str:
+    home = Path.home()
+    markers = {
+        "claude": home / ".claude",
+        "codex": home / ".agents",
+        "opencode": home / ".config" / "opencode",
+    }
+    detected = [host for host, marker in markers.items() if marker.is_dir()]
+    if len(detected) == 1:
+        return detected[0]
+    if not detected:
+        raise ValueError(f"host could not be detected; choose one of: {', '.join(HOSTS)}")
+    raise ValueError(
+        f"multiple hosts detected ({', '.join(detected)}); specify one explicitly"
+    )
+
+
 def destinations(host: str, scope: str, project: Path) -> tuple[Path, list[Path]]:
     if scope == "project":
         bases = {
@@ -130,7 +147,7 @@ def install(args: argparse.Namespace) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("host", nargs="?", choices=HOSTS, help="Host to install for")
+    parser.add_argument("host", nargs="?", choices=HOSTS, help="Host to install for (auto-detected when omitted)")
     parser.add_argument("--host", dest="legacy_host", choices=HOSTS, help=argparse.SUPPRESS)
     parser.add_argument("--scope", choices=("user", "project"), default="user")
     parser.add_argument("--project", default=".", help="Project root for --scope project")
@@ -145,9 +162,8 @@ def main() -> None:
     if args.host and args.legacy_host:
         parser.error("host must be supplied either positionally or with --host, not both")
     args.host = args.host or args.legacy_host
-    if not args.host:
-        parser.error("the following arguments are required: host")
     try:
+        args.host = args.host or detect_host()
         install(args)
     except (OSError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

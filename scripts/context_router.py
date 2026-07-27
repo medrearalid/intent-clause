@@ -15,6 +15,7 @@ from pathlib import Path
 
 DEFAULT_BUDGET = 2000
 DEFAULT_MAX_FILES = 8
+MODULE_MANIFEST = Path(__file__).resolve().parent.parent / "modules.json"
 MAX_INVENTORY_FILES = 50_000
 MAX_FILE_BYTES = 1_000_000
 TOKEN_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{1,63}")
@@ -279,6 +280,53 @@ def route(query: str, file_count: int, graph_exists: bool, is_git: bool, truncat
     return "focused-read"
 
 
+def module_plan(query: str) -> tuple[list[dict[str, object]], list[dict[str, str]]]:
+    manifest = json.loads(MODULE_MANIFEST.read_text(encoding="utf-8"))["modules"]
+    lowered = query.lower()
+    selected: dict[str, str] = {
+        "context-routing": "project evidence is required",
+    }
+
+    signals = {
+        "prompt-compiler": ("architecture", "cross-file", "complex", "migration", "mimari", "katman"),
+        "model-routing": ("architecture", "security", "migration", "mimari", "model recommendation"),
+        "execution": ("implement", "refactor", "fix", "change", "update", "add", "uygula", "duzelt"),
+        "optimization": ("optimiz", "performance", "faster", "speed", "token", "cost", "latency", "hiz"),
+        "safety": ("auth", "permission", "secret", "security", "privacy", "production", "migration", "guven"),
+        "remote": ("--remote",),
+        "domain-frontend": ("frontend", "react", "css", "ui", "ux", "design", "tasarim"),
+        "domain-data": ("analytics", "dataset", "machine learning", "model training", "veri"),
+        "domain-devops": ("deploy", "cloud", "docker", "kubernetes", "database", "devops", "migration"),
+        "domain-security": ("security", "privacy", "auth", "permission", "threat", "guvenlik"),
+        "domain-research": ("research", "documentation", "write", "citation", "arastir", "dokuman"),
+        "domain-business": ("marketing", "conversion", "business", "funnel", "product strategy", "pazarlama"),
+    }
+    for module, terms in signals.items():
+        matched = next((term for term in terms if term in lowered), None)
+        if matched:
+            selected[module] = f"request signal: {matched}"
+
+    if not any(name.startswith("domain-") for name in selected):
+        selected["domain-software"] = "default project engineering domain"
+
+    modules = [
+        {
+            "id": name,
+            "path": manifest[name]["path"],
+            "reason": reason,
+            "required": True,
+            "estimated_tokens": manifest[name]["estimated_tokens"],
+        }
+        for name, reason in selected.items()
+    ]
+    excluded = [
+        {"id": name, "reason": f"trigger absent: {config['load_when']}"}
+        for name, config in manifest.items()
+        if name not in selected
+    ]
+    return modules, excluded
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", default=".", help="Project root")
@@ -314,6 +362,7 @@ def main() -> None:
     graph_available = safe_project_file(root, graph_path)
     memory_path = root / ".intent-clause" / "memory.jsonl"
     memory_available = safe_project_file(root, memory_path)
+    modules, excluded_modules = module_plan(args.query)
 
     output = {
         "project_root": str(root),
@@ -338,6 +387,8 @@ def main() -> None:
         },
         "git": git,
         "recommended_route": route(args.query, len(paths), graph_available, git_ok, truncated),
+        "modules": modules,
+        "excluded_modules": excluded_modules,
         "candidates": [candidate.as_dict() for candidate in selected],
         "notes": [
             "No candidate file bodies were read.",

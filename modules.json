@@ -1,0 +1,84 @@
+{
+  "modules": {
+    "intent": {
+      "path": "references/intent-and-context.md",
+      "estimated_tokens": 1200,
+      "load_when": "request is vague, contradictory, or solution-framed"
+    },
+    "context-routing": {
+      "path": "references/context-routing.md",
+      "estimated_tokens": 1800,
+      "load_when": "project evidence is required"
+    },
+    "optimization": {
+      "path": "references/optimization.md",
+      "estimated_tokens": 900,
+      "load_when": "performance, cost, quality, or token optimization is requested"
+    },
+    "safety": {
+      "path": "references/safety-and-risk.md",
+      "estimated_tokens": 1800,
+      "load_when": "risk is R2 or R3"
+    },
+    "prompt-compiler": {
+      "path": "references/prompt-compiler.md",
+      "estimated_tokens": 1600,
+      "load_when": "request is standard or complex"
+    },
+    "model-routing": {
+      "path": "references/model-routing.md",
+      "estimated_tokens": 1000,
+      "load_when": "execution or an explicit model recommendation is required"
+    },
+    "execution": {
+      "path": "references/execution-and-verification.md",
+      "estimated_tokens": 900,
+      "load_when": "mode is EXECUTE or PLAN_ONLY"
+    },
+    "learning": {
+      "path": "references/learning-and-cache.md",
+      "estimated_tokens": 1400,
+      "load_when": "a learning threshold signal occurred"
+    },
+    "remote": {
+      "path": "references/remote-intelligence.md",
+      "estimated_tokens": 1200,
+      "load_when": "--remote is present"
+    },
+    "domain-software": {
+      "path": "references/domains/software.md",
+      "estimated_tokens": 500,
+      "load_when": "software engineering or API work is requested"
+    },
+    "domain-frontend": {
+      "path": "references/domains/frontend.md",
+      "estimated_tokens": 500,
+      "load_when": "frontend or product design is requested"
+    },
+    "domain-data": {
+      "path": "references/domains/data.md",
+      "estimated_tokens": 500,
+      "load_when": "data, analytics, or machine learning is requested"
+    },
+    "domain-devops": {
+      "path": "references/domains/devops.md",
+      "estimated_tokens": 500,
+      "load_when": "DevOps, cloud, deployment, or database work is requested"
+    },
+    "domain-security": {
+      "path": "references/domains/security.md",
+      "estimated_tokens": 450,
+      "load_when": "security or privacy analysis is requested"
+    },
+    "domain-research": {
+      "path": "references/domains/research.md",
+      "estimated_tokens": 450,
+      "load_when": "research, writing, or documentation is requested"
+    },
+    "domain-business": {
+      "path": "references/domains/business.md",
+      "estimated_tokens": 450,
+      "load_when": "business, product, or marketing work is requested"
+    }
+  }
+}

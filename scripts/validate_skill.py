@@ -75,6 +75,7 @@ def validate_skill() -> None:
             fail(f"broken local link: {target}")
 
     required_files = (
+        "modules.json",
         "adapters/opencode/intent-clause.md",
         "adapters/opencode/ic.md",
         "adapters/claude/ic.md",
@@ -96,6 +97,20 @@ def validate_skill() -> None:
         command = (ROOT / relative).read_text(encoding="utf-8")
         if "$ARGUMENTS" not in command or "intent-clause" not in command:
             fail(f"command adapter does not forward arguments to the skill: {relative}")
+
+    try:
+        modules = json.loads((ROOT / "modules.json").read_text(encoding="utf-8"))["modules"]
+    except (OSError, KeyError, json.JSONDecodeError) as exc:
+        fail(f"invalid modules.json: {exc}")
+    if not isinstance(modules, dict) or not modules:
+        fail("modules.json must contain a non-empty modules object")
+    for name, config in modules.items():
+        if not isinstance(config, dict) or not {"path", "estimated_tokens", "load_when"}.issubset(config):
+            fail(f"module '{name}' is missing required fields")
+        if not (ROOT / str(config["path"])).is_file():
+            fail(f"module '{name}' has a missing path: {config['path']}")
+        if not isinstance(config["estimated_tokens"], int) or config["estimated_tokens"] <= 0:
+            fail(f"module '{name}' has an invalid token estimate")
     openai = (ROOT / "agents/openai.yaml").read_text(encoding="utf-8")
     if "allow_implicit_invocation: false" not in openai:
         fail("Codex manual invocation policy is missing")

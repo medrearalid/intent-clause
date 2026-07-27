@@ -61,6 +61,30 @@ class ContextRouterTests(unittest.TestCase):
             candidate["path"] for candidate in output["candidates"]
         })
 
+    def test_module_plan_selects_only_relevant_policy(self) -> None:
+        output = json.loads(run_script(
+            "context_router.py", "--root", str(ROOT),
+            "--query", "optimize frontend token usage", "--budget", "2000",
+        ).stdout)
+        selected = {module["id"] for module in output["modules"]}
+        excluded = {module["id"] for module in output["excluded_modules"]}
+
+        self.assertIn("optimization", selected)
+        self.assertIn("domain-frontend", selected)
+        self.assertIn("remote", excluded)
+        self.assertIn("learning", excluded)
+        self.assertTrue(all(module["reason"] for module in output["modules"]))
+
+    def test_default_module_plan_uses_software_domain(self) -> None:
+        output = json.loads(run_script(
+            "context_router.py", "--root", str(ROOT),
+            "--query", "refactor request handler", "--budget", "2000",
+        ).stdout)
+        selected = {module["id"] for module in output["modules"]}
+
+        self.assertIn("domain-software", selected)
+        self.assertNotIn("domain-frontend", selected)
+
     def test_existing_graph_routes_architecture_query_to_graphify(self) -> None:
         fixture = ROOT / "evals" / "fixtures" / "graph-project"
         result = run_script(
@@ -327,14 +351,42 @@ class InstallerTests(unittest.TestCase):
 
         self.assertIn("claude_guard: True", result.stdout)
 
-    def test_host_is_required_and_cannot_be_repeated(self) -> None:
-        missing = run_script("install.py", "--dry-run", check=False)
+    def test_host_is_auto_detected_and_cannot_be_repeated(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            (home / ".config" / "opencode").mkdir(parents=True)
+            environment = os.environ.copy()
+            environment["HOME"] = directory
+            environment["USERPROFILE"] = directory
+            environment["PYTHONDONTWRITEBYTECODE"] = "1"
+            detected = subprocess.run(
+                [PYTHON, str(ROOT / "scripts" / "install.py"), "--dry-run"],
+                check=True, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                env=environment,
+            )
         repeated = run_script("install.py", "claude", "--host", "claude", "--dry-run", check=False)
 
-        self.assertEqual(missing.returncode, 2)
-        self.assertIn("required: host", missing.stderr)
+        self.assertIn(".config", detected.stdout)
+        self.assertIn("opencode", detected.stdout)
         self.assertEqual(repeated.returncode, 2)
         self.assertIn("not both", repeated.stderr)
+
+    def test_missing_or_ambiguous_host_is_not_guessed(self) -> None:
+        for markers, expected in (((), "could not be detected"), ((".claude", ".agents"), "multiple hosts detected")):
+            with self.subTest(markers=markers), tempfile.TemporaryDirectory() as directory:
+                home = Path(directory)
+                for marker in markers:
+                    (home / marker).mkdir(parents=True)
+                environment = os.environ.copy()
+                environment["HOME"] = directory
+                environment["USERPROFILE"] = directory
+                result = subprocess.run(
+                    [PYTHON, str(ROOT / "scripts" / "install.py"), "--dry-run"],
+                    check=False, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                    env=environment,
+                )
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(expected, result.stderr)
 
     def test_claude_install_injects_manual_guard(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -355,7 +407,8 @@ class InstallerTests(unittest.TestCase):
 
             content = command.read_text(encoding="utf-8")
             self.assertIn("$ARGUMENTS", content)
-            self.assertIn("Load the `intent-clause` skill", content)
+            self.assertIn("Clause and effect", content)
+            self.assertLessEqual(len(content.splitlines()), 5)
             self.assertIn("$ARGUMENTS", alias.read_text(encoding="utf-8"))
             self.assertFalse((project / ".opencode" / "commands" / "promptimizer.md").exists())
 
