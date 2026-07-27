@@ -1,0 +1,11 @@
+{
+  "name": "intent-clause-eval-pagination-app",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}

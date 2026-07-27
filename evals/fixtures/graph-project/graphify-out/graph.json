@@ -1,0 +1,27 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "id": "http-handler",
+      "label": "HTTP Handler",
+      "source_file": "src/handler.js",
+      "source_location": "src/handler.js:1"
+    },
+    {
+      "id": "service",
+      "label": "Request Service",
+      "source_file": "src/service.js",
+      "source_location": "src/service.js:1"
+    }
+  ],
+  "links": [
+    {
+      "source": "http-handler",
+      "target": "service",
+      "relation": "calls",
+      "confidence": "EXTRACTED"
+    }
+  ]
+}
