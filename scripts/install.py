@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SKIP_NAMES = {".git", ".intent-clause", "__pycache__"}
+HOSTS = ("claude", "codex", "opencode")
 
 
 def destinations(host: str, scope: str, project: Path) -> tuple[Path, list[Path]]:
@@ -129,7 +130,8 @@ def install(args: argparse.Namespace) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--host", choices=("claude", "codex", "opencode"), required=True)
+    parser.add_argument("host", nargs="?", choices=HOSTS, help="Host to install for")
+    parser.add_argument("--host", dest="legacy_host", choices=HOSTS, help=argparse.SUPPRESS)
     parser.add_argument("--scope", choices=("user", "project"), default="user")
     parser.add_argument("--project", default=".", help="Project root for --scope project")
     parser.add_argument("--force", action="store_true", help="Replace an existing installation")
@@ -138,7 +140,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    args = build_parser().parse_args()
+    parser = build_parser()
+    args = parser.parse_args()
+    if args.host and args.legacy_host:
+        parser.error("host must be supplied either positionally or with --host, not both")
+    args.host = args.host or args.legacy_host
+    if not args.host:
+        parser.error("the following arguments are required: host")
     try:
         install(args)
     except (OSError, ValueError) as exc:

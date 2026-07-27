@@ -303,6 +303,39 @@ class MemoryTests(unittest.TestCase):
 
 
 class InstallerTests(unittest.TestCase):
+    def test_positional_host_installs_with_user_scope_default(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            environment = os.environ.copy()
+            environment["HOME"] = directory
+            environment["USERPROFILE"] = directory
+            environment["PYTHONDONTWRITEBYTECODE"] = "1"
+            result = subprocess.run(
+                [PYTHON, str(ROOT / "scripts" / "install.py"), "codex"],
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                env=environment,
+            )
+
+            self.assertIn("Installed IntentClause skill", result.stdout)
+            self.assertTrue((Path(directory) / ".agents" / "skills" / "intent-clause" / "SKILL.md").is_file())
+
+    def test_legacy_host_flag_remains_supported(self) -> None:
+        result = run_script("install.py", "--host", "claude", "--dry-run")
+
+        self.assertIn("claude_guard: True", result.stdout)
+
+    def test_host_is_required_and_cannot_be_repeated(self) -> None:
+        missing = run_script("install.py", "--dry-run", check=False)
+        repeated = run_script("install.py", "claude", "--host", "claude", "--dry-run", check=False)
+
+        self.assertEqual(missing.returncode, 2)
+        self.assertIn("required: host", missing.stderr)
+        self.assertEqual(repeated.returncode, 2)
+        self.assertIn("not both", repeated.stderr)
+
     def test_claude_install_injects_manual_guard(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             project = Path(directory)

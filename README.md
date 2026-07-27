@@ -49,9 +49,9 @@ Clone the repository and install IntentClause for your host:
 git clone https://github.com/medrearalid/intent-clause.git
 cd intent-clause
 
-python scripts/install.py --host claude --scope user
-# or: python scripts/install.py --host codex --scope user
-# or: python scripts/install.py --host opencode --scope user
+python scripts/install.py claude
+# or: python scripts/install.py codex
+# or: python scripts/install.py opencode
 ```
 
 Restart the host if it caches commands or skill metadata, then invoke IntentClause:
@@ -96,7 +96,7 @@ Three temporary gates can pause execution without discarding progress:
 The host-aware installer checks destinations before writing and never replaces an existing installation unless `--force` is supplied.
 
 ```bash
-python scripts/install.py --host <host> --scope <scope>
+python scripts/install.py <host>
 ```
 
 | Host | Skill location | Invocation |
@@ -108,14 +108,16 @@ python scripts/install.py --host <host> --scope <scope>
 Use project scope when you want a repository-local installation:
 
 ```bash
-python scripts/install.py --host opencode --scope project --project /path/to/project
+python scripts/install.py opencode --scope project --project /path/to/project
 ```
 
 Preview changes before installation:
 
 ```bash
-python scripts/install.py --host claude --scope user --dry-run
+python scripts/install.py claude --dry-run
 ```
+
+The previous `--host <host>` form remains supported for existing scripts.
 
 <details>
 <summary><strong>Manual-invocation behavior by host</strong></summary>
